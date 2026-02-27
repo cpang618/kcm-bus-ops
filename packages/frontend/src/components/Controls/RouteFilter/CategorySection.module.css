@@ -1,0 +1,14 @@
+.section { border-bottom: 1px solid rgba(255, 255, 255, 0.04); }
+.section:last-child { border-bottom: none; }
+.categoryHeader { display: flex; justify-content: space-between; align-items: center; padding: 6px 12px; }
+.categoryCheckboxLabel { display: flex; align-items: center; gap: 6px; cursor: pointer; flex: 1; }
+.checkbox { accent-color: #2DC653; cursor: pointer; width: 13px; height: 13px; flex-shrink: 0; }
+.categoryName { font-size: 12px; font-weight: 600; color: #ccc; }
+.routeCount { font-size: 10px; color: #555; margin-left: 2px; }
+.expandBtn { font-size: 12px; padding: 2px 6px; border: none; background: transparent; color: #666; cursor: pointer; transition: color 0.15s; }
+.expandBtn:hover { color: #aaa; }
+.routeGrid { display: flex; flex-wrap: wrap; gap: 2px 4px; padding: 4px 12px 8px 28px; }
+.routeLabel { display: flex; align-items: center; gap: 4px; cursor: pointer; min-width: 70px; }
+.routeName { font-size: 11px; color: #888; white-space: nowrap; }
+.routeNameClickable { cursor: pointer; }
+.routeNameClickable:hover { color: #fff; text-decoration: underline; }

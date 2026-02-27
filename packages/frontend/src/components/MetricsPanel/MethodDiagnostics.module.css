@@ -1,0 +1,10 @@
+.container { padding: 10px 14px 12px; border-bottom: 1px solid rgba(255, 255, 255, 0.07); }
+.header { font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: #555; margin-bottom: 9px; }
+.row { display: flex; align-items: center; gap: 7px; margin-bottom: 7px; }
+.badge { font-size: 9px; font-weight: 700; letter-spacing: 0.04em; padding: 1px 5px; border-radius: 3px; border: 1px solid; flex-shrink: 0; width: 32px; text-align: center; }
+.label { font-size: 11px; color: #888; flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.barTrack { width: 56px; height: 4px; background: rgba(255, 255, 255, 0.07); border-radius: 2px; flex-shrink: 0; overflow: hidden; }
+.barFill { height: 100%; border-radius: 2px; transition: width 0.4s ease; }
+.pct { font-size: 12px; font-weight: 600; width: 32px; text-align: right; flex-shrink: 0; }
+.count { font-size: 11px; color: #444; width: 36px; text-align: right; flex-shrink: 0; }
+.footer { font-size: 10px; color: #444; margin-top: 3px; }

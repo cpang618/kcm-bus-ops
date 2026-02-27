@@ -1,0 +1,12 @@
+node_modules/
+dist/
+.env
+*.env.local
+
+# GTFS data (large files, re-downloaded and extracted on first run)
+data/gtfs/*.zip
+data/gtfs/**/*.txt
+
+# OS
+.DS_Store
+Thumbs.db

@@ -1,0 +1,12 @@
+.header { display: flex; justify-content: space-between; align-items: center; padding: 10px 14px; border-bottom: 1px solid rgba(255, 255, 255, 0.07); }
+.title { font-size: 12px; font-weight: 600; color: #888; text-transform: uppercase; letter-spacing: 0.08em; }
+.modeToggle { display: flex; gap: 2px; background: #111; border-radius: 6px; padding: 2px; }
+.modeBtn { font-size: 11px; padding: 3px 8px; border-radius: 4px; border: none; cursor: pointer; background: transparent; color: #666; transition: all 0.15s; }
+.modeBtn.active { background: #2a2a2a; color: #fff; }
+.sliders { padding: 10px 14px 12px; }
+.sliderRow { margin-bottom: 10px; }
+.sliderLabel { display: flex; justify-content: space-between; margin-bottom: 4px; font-size: 12px; color: #888; }
+.sliderValue { font-weight: 600; font-variant-numeric: tabular-nums; }
+.slider { width: 100%; -webkit-appearance: none; appearance: none; height: 4px; background: #333; border-radius: 2px; outline: none; }
+.slider::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 14px; height: 14px; border-radius: 50%; background: var(--slider-color, #fff); cursor: pointer; border: 2px solid #fff; box-shadow: 0 0 4px rgba(0, 0, 0, 0.5); }
+.hint { font-size: 10px; color: #444; text-align: center; margin-top: 4px; }

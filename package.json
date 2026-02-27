@@ -1,0 +1,18 @@
+{
+  "name": "kcm-bus-ops",
+  "version": "0.0.1",
+  "private": true,
+  "workspaces": [
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "concurrently \"npm run dev --workspace=packages/backend\" \"npm run dev --workspace=packages/frontend\"",
+    "build:shared": "npm run build --workspace=packages/shared",
+    "build": "npm run build:shared && npm run build --workspace=packages/backend && npm run build --workspace=packages/frontend",
+    "type-check": "npm run type-check --workspaces --if-present"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2",
+    "typescript": "^5.4.5"
+  }
+}

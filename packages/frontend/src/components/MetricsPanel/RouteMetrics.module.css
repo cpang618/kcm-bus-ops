@@ -1,0 +1,11 @@
+.row { display: flex; align-items: center; gap: 8px; padding: 4px 14px; transition: background 0.1s; }
+.row.clickable { cursor: pointer; }
+.row.clickable:hover { background: rgba(255, 255, 255, 0.06); }
+.row:not(.clickable):hover { background: rgba(255, 255, 255, 0.04); }
+.row.bad { background: rgba(230, 57, 70, 0.07); }
+.routeName { display: flex; flex-direction: column; gap: 1px; width: 64px; flex-shrink: 0; overflow: hidden; font-size: 12px; font-weight: 600; color: #ccc; }
+.direction { font-size: 8px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.07em; color: #555; }
+.bar { flex: 1; height: 4px; background: #222; border-radius: 2px; display: flex; overflow: hidden; }
+.stats { display: flex; gap: 6px; align-items: center; min-width: 60px; justify-content: flex-end; }
+.pct { font-size: 11px; font-weight: 600; font-variant-numeric: tabular-nums; min-width: 32px; text-align: right; }
+.vehicles { font-size: 10px; color: #444; font-variant-numeric: tabular-nums; }

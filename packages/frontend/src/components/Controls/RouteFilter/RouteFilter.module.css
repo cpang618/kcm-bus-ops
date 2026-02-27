@@ -1,0 +1,34 @@
+.panel {
+  width: 280px;
+  background: rgba(15, 15, 20, 0.95);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 10px;
+  overflow: hidden;
+  backdrop-filter: blur(8px);
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.6);
+}
+.header { display: flex; justify-content: space-between; align-items: center; padding: 10px 14px; border-bottom: 1px solid rgba(255, 255, 255, 0.07); }
+.title { font-size: 12px; font-weight: 600; color: #888; text-transform: uppercase; letter-spacing: 0.08em; }
+.headerActions { display: flex; gap: 4px; align-items: center; }
+.actionBtn { font-size: 11px; padding: 3px 8px; border-radius: 4px; border: none; cursor: pointer; background: #1a1a1a; color: #666; transition: all 0.15s; }
+.actionBtn.active { background: #2a2a2a; color: #fff; }
+.actionBtn:hover { color: #aaa; }
+.collapseBtn { font-size: 10px; padding: 3px 6px; border-radius: 4px; border: none; cursor: pointer; background: transparent; color: #666; transition: color 0.15s; }
+.collapseBtn:hover { color: #aaa; }
+.body { max-height: 0; overflow: hidden; transition: max-height 0.3s ease; }
+.bodyOpen { max-height: 600px; overflow-y: auto; }
+.controls { padding: 8px 14px; border-bottom: 1px solid rgba(255, 255, 255, 0.05); }
+.controlRow { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
+.controlRow:last-child { margin-bottom: 0; }
+.controlLabel { font-size: 11px; color: #888; }
+.pillGroup { display: flex; gap: 2px; background: #111; border-radius: 6px; padding: 2px; }
+.pill { font-size: 11px; padding: 2px 8px; border-radius: 4px; border: none; cursor: pointer; background: transparent; color: #666; transition: all 0.15s; }
+.pillActive { background: #2a2a2a; color: #fff; }
+.toggleBtn { display: flex; align-items: center; gap: 4px; padding: 3px 8px 3px 4px; border-radius: 12px; border: none; cursor: pointer; font-size: 10px; transition: all 0.2s; }
+.toggleOn { background: rgba(45, 198, 83, 0.15); color: #2DC653; }
+.toggleOff { background: #1a1a1a; color: #666; }
+.toggleDot { width: 8px; height: 8px; border-radius: 50%; transition: background 0.2s; }
+.toggleOn .toggleDot { background: #2DC653; }
+.toggleOff .toggleDot { background: #444; }
+.toggleText { font-weight: 600; }
+.list { padding: 4px 0; }
