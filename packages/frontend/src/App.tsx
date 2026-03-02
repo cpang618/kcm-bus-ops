@@ -74,10 +74,12 @@ function AppInner() {
             totalVehicles={vehicles.length}
             excludedCount={excludedCount}
           />
-          <RouteFilter routeFeatures={routeFeatures} />
         </div>
 
-        <RoutesPanel data={metricsData} routeFeatures={routeFeatures} />
+        <div className={styles.rightColumn}>
+          <RoutesPanel data={metricsData} routeFeatures={routeFeatures} />
+          <RouteFilter routeFeatures={routeFeatures} />
+        </div>
       </MapView>
     </div>
   );

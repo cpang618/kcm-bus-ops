@@ -75,8 +75,8 @@ export function RouteFilter({ routeFeatures }: RouteFilterProps) {
             <span className={styles.controlLabel}>Direction</span>
             <div className={styles.pillGroup}>
               <button className={`${styles.pill} ${selectedDirectionId === "all" ? styles.pillActive : ""}`} onClick={() => setDirectionId("all")}>All</button>
-              <button className={`${styles.pill} ${selectedDirectionId === 0 ? styles.pillActive : ""}`} onClick={() => setDirectionId(0)} title="Direction 0 (typically outbound)">0</button>
-              <button className={`${styles.pill} ${selectedDirectionId === 1 ? styles.pillActive : ""}`} onClick={() => setDirectionId(1)} title="Direction 1 (typically inbound)">1</button>
+              <button className={`${styles.pill} ${selectedDirectionId === 0 ? styles.pillActive : ""}`} onClick={() => setDirectionId(0)} title="Outbound (direction 0)">Outbound</button>
+              <button className={`${styles.pill} ${selectedDirectionId === 1 ? styles.pillActive : ""}`} onClick={() => setDirectionId(1)} title="Inbound (direction 1)">Inbound</button>
             </div>
           </div>
           <div className={styles.controlRow}>

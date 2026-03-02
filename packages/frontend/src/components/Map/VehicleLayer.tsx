@@ -11,6 +11,18 @@ const SOURCE_ID = "vehicles";
 const LAYER_ARROW_ID = "vehicles-arrow";
 const LAYER_LABEL_ID = "vehicles-label";
 const ARROW_IMAGE_ID = "bus-arrow";
+const STRIPED_IMAGE_PREFIX = "bus-arrow-striped-";
+
+/** Traces the arrow chevron path onto ctx (pointing up, notched tail). */
+function traceArrowPath(ctx: CanvasRenderingContext2D, cx: number, size: number): void {
+  ctx.beginPath();
+  ctx.moveTo(cx, 2);
+  ctx.lineTo(cx + 10, size - 4);
+  ctx.lineTo(cx + 3, size - 11);
+  ctx.lineTo(cx - 3, size - 11);
+  ctx.lineTo(cx - 10, size - 4);
+  ctx.closePath();
+}
 
 function registerArrowImage(map: mapboxgl.Map): void {
   if (map.hasImage(ARROW_IMAGE_ID)) return;
@@ -21,16 +33,54 @@ function registerArrowImage(map: mapboxgl.Map): void {
   const ctx = canvas.getContext("2d")!;
   const cx = size / 2;
   ctx.clearRect(0, 0, size, size);
-  ctx.beginPath();
-  ctx.moveTo(cx, 2);
-  ctx.lineTo(cx + 10, size - 4);
-  ctx.lineTo(cx + 3, size - 11);
-  ctx.lineTo(cx - 3, size - 11);
-  ctx.lineTo(cx - 10, size - 4);
-  ctx.closePath();
+  traceArrowPath(ctx, cx, size);
   ctx.fillStyle = "rgba(255, 255, 255, 1)";
   ctx.fill();
   map.addImage(ARROW_IMAGE_ID, ctx.getImageData(0, 0, size, size), { sdf: true });
+}
+
+/**
+ * Registers three non-SDF striped arrow images (one per non-unknown status).
+ * Each has the status color as the base fill with diagonal dark stripes clipped
+ * to the arrow shape — used when a bus has a status but no scheduled headway.
+ */
+function registerStripedArrowImages(map: mapboxgl.Map): void {
+  const size = 32;
+  const cx = size / 2;
+
+  for (const [status, color] of Object.entries(STATUS_COLORS) as [HeadwayStatus, string][]) {
+    if (status === "unknown") continue;
+    const imageId = `${STRIPED_IMAGE_PREFIX}${status}`;
+    if (map.hasImage(imageId)) continue;
+
+    const canvas = document.createElement("canvas");
+    canvas.width = size;
+    canvas.height = size;
+    const ctx = canvas.getContext("2d")!;
+
+    ctx.clearRect(0, 0, size, size);
+
+    // Solid base fill
+    traceArrowPath(ctx, cx, size);
+    ctx.fillStyle = color;
+    ctx.fill();
+
+    // Diagonal stripes clipped to arrow shape
+    ctx.save();
+    traceArrowPath(ctx, cx, size);
+    ctx.clip();
+    ctx.strokeStyle = "rgba(0, 0, 0, 0.40)";
+    ctx.lineWidth = 2.5;
+    for (let i = -size; i < size * 2; i += 6) {
+      ctx.beginPath();
+      ctx.moveTo(i, 0);
+      ctx.lineTo(i + size, size);
+      ctx.stroke();
+    }
+    ctx.restore();
+
+    map.addImage(imageId, ctx.getImageData(0, 0, size, size), { sdf: false });
+  }
 }
 
 interface VehicleLayerProps {
@@ -50,7 +100,7 @@ function fmtSecs(secs: number | null | undefined): string {
   return `${Math.round(secs / 60)}m`;
 }
 
-function buildHoverHtml(vehicle: Vehicle, headway: HeadwayResult | undefined): string {
+function buildHoverHtml(vehicle: Vehicle, headway: HeadwayResult | undefined, noSchedule: boolean): string {
   const status: HeadwayStatus = (headway?.status as HeadwayStatus) ?? "unknown";
   const dirLabel = vehicle.directionId === 0 ? "Outbound" : "Inbound";
 
@@ -107,6 +157,14 @@ function buildHoverHtml(vehicle: Vehicle, headway: HeadwayResult | undefined): s
           <td style="text-align:right; color:#ddd;">${schedDiff}</td>
         </tr>
       </table>
+      ${noSchedule ? `
+      <div style="
+        margin-top:8px; padding:5px 7px;
+        background:rgba(244,162,97,0.12); border-radius:4px;
+        color:#F4A261; font-size:10px; line-height:1.4;
+      ">
+        No scheduled headway — status based on absolute thresholds
+      </div>` : ""}
     </div>
   `;
 }
@@ -137,6 +195,15 @@ export function VehicleLayer({ vehicles, headways }: VehicleLayerProps) {
     features: vehicles.map((v) => {
       const headway = headwayByVehicle.get(v.vehicleRef);
       const status: HeadwayStatus = headway ? classifyHeadway(headway, thresholds) : "unknown";
+      // noSchedule: in pct mode, bus has a measured headway but no scheduled headway to compare
+      const noSchedule =
+        thresholds.mode === "pct" &&
+        (headway?.actualHeadwaySecs ?? null) !== null &&
+        (headway?.headwayRatioPct ?? null) === null;
+      const iconImage =
+        noSchedule && status !== "unknown"
+          ? `${STRIPED_IMAGE_PREFIX}${status}`
+          : ARROW_IMAGE_ID;
       return {
         type: "Feature",
         geometry: { type: "Point", coordinates: [v.lng, v.lat] },
@@ -150,6 +217,11 @@ export function VehicleLayer({ vehicles, headways }: VehicleLayerProps) {
           progressRate: v.progressRate,
           status,
           color: STATUS_COLORS[status],
+          iconImage,
+          actualHeadwaySecs: headway?.actualHeadwaySecs ?? null,
+          scheduledHeadwaySecs: headway?.scheduledHeadwaySecs ?? null,
+          headwayRatioPct: headway?.headwayRatioPct ?? null,
+          leadVehicleRef: headway?.leadVehicleRef ?? null,
         },
       };
     }),
@@ -161,13 +233,14 @@ export function VehicleLayer({ vehicles, headways }: VehicleLayerProps) {
     if (!map.getSource(SOURCE_ID)) {
       map.addSource(SOURCE_ID, { type: "geojson", data: featureCollection });
       registerArrowImage(map);
+      registerStripedArrowImages(map);
 
       map.addLayer({
         id: LAYER_ARROW_ID,
         type: "symbol",
         source: SOURCE_ID,
         layout: {
-          "icon-image": ARROW_IMAGE_ID,
+          "icon-image": ["get", "iconImage"],
           "icon-rotate": ["get", "bearing"],
           "icon-rotation-alignment": "map",
           "icon-allow-overlap": true,
@@ -257,6 +330,10 @@ export function VehicleLayer({ vehicles, headways }: VehicleLayerProps) {
       const enrichedHeadway = headway
         ? { ...headway, status: classifyHeadway(headway, thresholdsRef.current) }
         : undefined;
+      const noSchedule =
+        thresholdsRef.current.mode === "pct" &&
+        (headway?.actualHeadwaySecs ?? null) !== null &&
+        (headway?.headwayRatioPct ?? null) === null;
 
       hoverPopupRef.current?.remove();
       hoverPopupRef.current = new mapboxgl.Popup({
@@ -266,7 +343,7 @@ export function VehicleLayer({ vehicles, headways }: VehicleLayerProps) {
         maxWidth: "280px",
       })
         .setLngLat(e.lngLat)
-        .setHTML(buildHoverHtml(vehicle, enrichedHeadway))
+        .setHTML(buildHoverHtml(vehicle, enrichedHeadway, noSchedule))
         .addTo(m);
     }
 

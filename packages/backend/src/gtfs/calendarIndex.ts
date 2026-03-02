@@ -1,14 +1,12 @@
 import type { GtfsCalendar, GtfsCalendarDate } from "@bus-ops/shared";
-
-const DAYS = ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"] as const;
+import { seattleDateParts } from "./seattleTime.js";
 
 export function getActiveServiceIds(
   date: Date,
   calendars: GtfsCalendar[],
   calendarDates: GtfsCalendarDate[],
 ): Set<string> {
-  const yyyymmdd = `${date.getFullYear()}${String(date.getMonth() + 1).padStart(2, "0")}${String(date.getDate()).padStart(2, "0")}`;
-  const dayName = DAYS[date.getDay()]!;
+  const { yyyymmdd, dayName } = seattleDateParts(date);
   const active = new Set<string>();
   for (const cal of calendars) {
     if (cal.startDate > yyyymmdd || cal.endDate < yyyymmdd) continue;

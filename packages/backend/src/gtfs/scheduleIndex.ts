@@ -1,6 +1,6 @@
 import type { FrequencyWindow, GtfsTrip, StopTime, GtfsStore } from "@bus-ops/shared";
-import { secondsFromMidnight } from "@bus-ops/shared";
 import { getActiveServiceIds } from "./calendarIndex.js";
+import { seattleSecondsFromMidnight } from "./seattleTime.js";
 
 function push<K, V>(map: Map<K, V[]>, key: K, val: V): void {
   let arr = map.get(key);
@@ -71,7 +71,7 @@ export function getScheduledHeadway(
   gtfsStore: GtfsStore,
 ): number | null {
   const key = `${routeId}:${directionId}`;
-  const nowSecs = secondsFromMidnight(now);
+  const nowSecs = seattleSecondsFromMidnight(now);
 
   const windows = gtfsStore.frequencies.get(key);
   if (windows?.length) {
