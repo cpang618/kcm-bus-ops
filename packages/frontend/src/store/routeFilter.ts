@@ -16,6 +16,7 @@ interface RouteFilterContextValue {
   toggleCategory: (category: RouteCategory, categoryRouteIds: string[], allRouteIds: string[]) => void;
   selectAll: () => void;
   clearAll: () => void;
+  selectOnly: (routeId: string, directionId: 0 | 1) => void;
   toggleCategoryExpanded: (category: RouteCategory) => void;
   selectedDirectionId: 0 | 1 | "all";
   setDirectionId: (dir: 0 | 1 | "all") => void;
@@ -75,6 +76,11 @@ export function RouteFilterProvider({ children }: { children: ReactNode }) {
 
   const clearAll = useCallback(() => setSelectedRouteIds(new Set()), []);
 
+  const selectOnly = useCallback((routeId: string, directionId: 0 | 1) => {
+    setSelectedRouteIds(new Set([routeId]));
+    setSelectedDirectionIdState(directionId);
+  }, []);
+
   const toggleCategoryExpanded = useCallback((category: RouteCategory) => {
     setExpandedCategories((prev) => {
       const next = new Set(prev);
@@ -99,6 +105,7 @@ export function RouteFilterProvider({ children }: { children: ReactNode }) {
         toggleCategory,
         selectAll,
         clearAll,
+        selectOnly,
         toggleCategoryExpanded,
         selectedDirectionId,
         setDirectionId,

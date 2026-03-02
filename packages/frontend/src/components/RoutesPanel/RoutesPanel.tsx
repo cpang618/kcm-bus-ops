@@ -1,6 +1,7 @@
 import { useState, useCallback } from "react";
 import type { MetricsResponse } from "@bus-ops/shared";
 import { useMap } from "../Map/MapView.js";
+import { useRouteFilter } from "../../store/routeFilter.js";
 import { RouteMetrics } from "../MetricsPanel/RouteMetrics.js";
 import styles from "./RoutesPanel.module.css";
 
@@ -12,9 +13,11 @@ interface RoutesPanelProps {
 export function RoutesPanel({ data, routeFeatures }: RoutesPanelProps) {
   const [isOpen, setIsOpen] = useState(true);
   const map = useMap();
+  const { selectOnly } = useRouteFilter();
 
   const handleRowClick = useCallback(
     (routeId: string, directionId: 0 | 1) => {
+      selectOnly(routeId, directionId);
       if (!map) return;
       const feature = routeFeatures.find(
         (f) => f.properties?.routeId === routeId && f.properties?.directionId === directionId,
@@ -23,7 +26,7 @@ export function RoutesPanel({ data, routeFeatures }: RoutesPanelProps) {
       const [lng, lat] = (feature.geometry as GeoJSON.LineString).coordinates[0];
       map.flyTo({ center: [lng, lat], zoom: 14, duration: 1000 });
     },
-    [map, routeFeatures],
+    [map, routeFeatures, selectOnly],
   );
 
   return (
