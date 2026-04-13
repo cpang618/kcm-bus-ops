@@ -28,11 +28,22 @@ export function transformVehicles(
     tripUpdateMap.set(entity.trip_update.trip.trip_id, entity.trip_update);
   }
 
+  // Deduplicate: KCM's enhanced feed contains one entity per remaining stop
+  // on a trip, so a single vehicle appears dozens of times. Keep only the
+  // entity with the lowest stop_sequence per vehicle (the actual next stop).
+  const bestByVehicle = new Map<string, typeof vpEntities[number]>();
   for (const entity of vpEntities) {
     const vp = entity.vehicle;
-
-    // Skip vehicles without valid position
     if (!vp.position?.latitude || !vp.position?.longitude) continue;
+    const vid = vp.vehicle.id;
+    const existing = bestByVehicle.get(vid);
+    if (!existing || (vp.current_stop_sequence ?? 0) < (existing.vehicle.current_stop_sequence ?? 0)) {
+      bestByVehicle.set(vid, entity);
+    }
+  }
+
+  for (const entity of bestByVehicle.values()) {
+    const vp = entity.vehicle;
 
     const routeId = vp.trip.route_id;
     const directionId = (vp.trip.direction_id ?? 0) as 0 | 1;
