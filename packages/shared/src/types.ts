@@ -43,6 +43,40 @@ export interface MethodBreakdown {
   distancePct: number;
 }
 
+// ─── OTP (On-Time Performance) Types ─────────────────────────────────────────
+
+export type OtpStatus = "early" | "on-time" | "late" | "unknown";
+export type ViewMode = "headway" | "otp";
+
+export interface OtpThresholdParams {
+  earlyThresholdSecs: number;
+  lateThresholdSecs: number;
+}
+
+export const DEFAULT_OTP_THRESHOLDS: OtpThresholdParams = {
+  earlyThresholdSecs: -60,
+  lateThresholdSecs: 300,
+};
+
+export interface OtpBreakdown {
+  total: number;
+  earlyCount: number;
+  onTimeCount: number;
+  lateCount: number;
+  unknownCount: number;
+  earlyPct: number;
+  onTimePct: number;
+  latePct: number;
+}
+
+export interface OtpRouteMetrics extends OtpBreakdown {
+  routeId: string;
+  directionId: 0 | 1;
+  routeShortName: string;
+  routeCategory: string;
+  vehicleCount: number;
+}
+
 // ─── Threshold Types ──────────────────────────────────────────────────────────
 
 export type ThresholdMode = "pct" | "abs";

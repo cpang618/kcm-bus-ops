@@ -2,8 +2,10 @@ import { useMemo } from "react";
 import type { MethodBreakdown } from "@bus-ops/shared";
 import { ThresholdProvider, useThresholds } from "./store/thresholds.js";
 import { RouteFilterProvider, useRouteFilter } from "./store/routeFilter.js";
+import { ViewModeProvider, useViewMode } from "./store/viewMode.js";
 import { useLiveVehicles } from "./hooks/useLiveVehicles.js";
 import { useMetrics } from "./hooks/useMetrics.js";
+import { useOtpMetrics } from "./hooks/useOtpMetrics.js";
 import { useRoutes } from "./hooks/useRoutes.js";
 import { useStops } from "./hooks/useStops.js";
 import { useStopHeadways } from "./hooks/useStopHeadways.js";
@@ -20,6 +22,7 @@ import styles from "./App.module.css";
 function AppInner() {
   const { thresholds } = useThresholds();
   const { showStops } = useRouteFilter();
+  const { viewMode, otpThresholds } = useViewMode();
 
   const { data: vehicleData, loading: vehiclesLoading, isStale } = useLiveVehicles();
   const { data: metricsData, loading: metricsLoading } = useMetrics(thresholds);
@@ -30,6 +33,8 @@ function AppInner() {
   const vehicles = vehicleData?.vehicles ?? [];
   const headways = vehicleData?.headways ?? [];
   const fetchedAt = vehicleData?.fetchedAt ?? null;
+
+  const otpMetrics = useOtpMetrics(vehicles, otpThresholds);
 
   const methodBreakdown = useMemo<MethodBreakdown | null>(() => {
     if (!headways.length) return null;
@@ -55,13 +60,14 @@ function AppInner() {
   );
 
   const excludedCount = Math.max(0, vehicles.length - (metricsData?.cityMetrics.total ?? 0));
+  const otpExcludedCount = Math.max(0, vehicles.length - otpMetrics.cityMetrics.total);
 
   return (
     <div className={styles.app}>
       <MapView>
         <RouteLayer routes={routes} />
         <StopLayer stops={stops} visible={showStops} />
-        <VehicleLayer vehicles={vehicles} headways={headways} />
+        <VehicleLayer vehicles={vehicles} headways={headways} viewMode={viewMode} otpByVehicle={otpMetrics.otpByVehicle} />
         <StopHeadwayLayer stopHeadways={stopHeadways} />
 
         <div className={styles.overlay}>
@@ -73,11 +79,13 @@ function AppInner() {
             methodBreakdown={methodBreakdown}
             totalVehicles={vehicles.length}
             excludedCount={excludedCount}
+            otpCityMetrics={otpMetrics.cityMetrics}
+            otpExcludedCount={otpExcludedCount}
           />
         </div>
 
         <div className={styles.rightColumn}>
-          <RoutesPanel data={metricsData} routeFeatures={routeFeatures} />
+          <RoutesPanel data={metricsData} routeFeatures={routeFeatures} viewMode={viewMode} otpRouteMetrics={otpMetrics.routeMetrics} />
           <RouteFilter routeFeatures={routeFeatures} />
         </div>
       </MapView>
@@ -89,7 +97,9 @@ export default function App() {
   return (
     <ThresholdProvider>
       <RouteFilterProvider>
-        <AppInner />
+        <ViewModeProvider>
+          <AppInner />
+        </ViewModeProvider>
       </RouteFilterProvider>
     </ThresholdProvider>
   );

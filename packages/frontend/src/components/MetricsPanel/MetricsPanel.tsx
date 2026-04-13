@@ -1,7 +1,10 @@
-import type { MetricsResponse, MethodBreakdown } from "@bus-ops/shared";
+import type { MetricsResponse, MethodBreakdown, OtpBreakdown, ViewMode } from "@bus-ops/shared";
+import { useViewMode } from "../../store/viewMode.js";
 import { CityMetrics } from "./CityMetrics.js";
+import { OtpCityMetrics } from "./OtpCityMetrics.js";
 import { MethodDiagnostics } from "./MethodDiagnostics.js";
 import { ThresholdSliders } from "../Controls/ThresholdSliders.js";
+import { OtpThresholdSliders } from "../Controls/OtpThresholdSliders.js";
 import styles from "./MetricsPanel.module.css";
 
 interface MetricsPanelProps {
@@ -12,9 +15,13 @@ interface MetricsPanelProps {
   methodBreakdown: MethodBreakdown | null;
   totalVehicles: number;
   excludedCount: number;
+  otpCityMetrics: OtpBreakdown | null;
+  otpExcludedCount: number;
 }
 
-export function MetricsPanel({ data, loading, fetchedAt, isStale, methodBreakdown, totalVehicles, excludedCount }: MetricsPanelProps) {
+export function MetricsPanel({ data, loading, fetchedAt, isStale, methodBreakdown, totalVehicles, excludedCount, otpCityMetrics, otpExcludedCount }: MetricsPanelProps) {
+  const { viewMode, setViewMode } = useViewMode();
+
   return (
     <div className={styles.panel}>
       <div className={styles.header}>
@@ -50,19 +57,35 @@ export function MetricsPanel({ data, loading, fetchedAt, isStale, methodBreakdow
         </a>
       </div>
 
+      <div className={styles.viewToggle}>
+        <button className={`${styles.viewPill} ${viewMode === "headway" ? styles.viewPillActive : ""}`} onClick={() => setViewMode("headway")}>Headway</button>
+        <button className={`${styles.viewPill} ${viewMode === "otp" ? styles.viewPillActive : ""}`} onClick={() => setViewMode("otp")}>On-Time Perf</button>
+      </div>
+
       {loading && !data && (
         <div className={styles.loading}>Loading...</div>
       )}
 
-      {methodBreakdown && (
-        <MethodDiagnostics breakdown={methodBreakdown} />
+      {viewMode === "headway" && (
+        <>
+          {methodBreakdown && (
+            <MethodDiagnostics breakdown={methodBreakdown} />
+          )}
+          {data && (
+            <>
+              <CityMetrics metrics={data.cityMetrics} totalVehicles={totalVehicles} excludedCount={excludedCount} />
+              <div className={styles.divider} />
+              <ThresholdSliders />
+            </>
+          )}
+        </>
       )}
 
-      {data && (
+      {viewMode === "otp" && otpCityMetrics && (
         <>
-          <CityMetrics metrics={data.cityMetrics} totalVehicles={totalVehicles} excludedCount={excludedCount} />
+          <OtpCityMetrics metrics={otpCityMetrics} totalVehicles={totalVehicles} excludedCount={otpExcludedCount} />
           <div className={styles.divider} />
-          <ThresholdSliders />
+          <OtpThresholdSliders />
         </>
       )}
     </div>

@@ -30,5 +30,8 @@
 }
 .attributionLink { color: #555; text-decoration: none; }
 .attributionLink:hover { color: #888; text-decoration: underline; }
+.viewToggle { display: flex; gap: 2px; background: #111; border-radius: 6px; padding: 2px; margin: 8px 14px 0; flex-shrink: 0; }
+.viewPill { flex: 1; font-size: 11px; padding: 4px 0; border-radius: 4px; border: none; cursor: pointer; background: transparent; color: #666; text-align: center; transition: all 0.15s; font-family: inherit; }
+.viewPillActive { background: #2a2a2a; color: #fff; }
 .loading { padding: 20px; text-align: center; color: #666; font-size: 13px; }
 .divider { height: 1px; background: rgba(255, 255, 255, 0.07); flex-shrink: 0; }

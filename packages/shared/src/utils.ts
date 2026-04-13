@@ -1,4 +1,4 @@
-import type { RouteCategory, HeadwayStatus, ThresholdParams } from "./types.js";
+import type { RouteCategory, HeadwayStatus, ThresholdParams, OtpStatus, OtpThresholdParams } from "./types.js";
 
 const D2R = Math.PI / 180;
 
@@ -10,6 +10,18 @@ interface ClassifiableHeadway {
 function classifyByAbs(secs: number, t: ThresholdParams): HeadwayStatus {
   if (secs < t.bunchingMins * 60) return "bunching";
   if (secs > t.gappingMins * 60) return "gapping";
+  return "on-time";
+}
+
+export function classifyOtp(
+  vehicle: { expectedArrivalTime: string | null; aimedArrivalTime: string | null },
+  thresholds: OtpThresholdParams,
+): OtpStatus {
+  if (!vehicle.expectedArrivalTime || !vehicle.aimedArrivalTime) return "unknown";
+  const delaySecs = (Date.parse(vehicle.expectedArrivalTime) - Date.parse(vehicle.aimedArrivalTime)) / 1000;
+  if (isNaN(delaySecs)) return "unknown";
+  if (delaySecs < thresholds.earlyThresholdSecs) return "early";
+  if (delaySecs > thresholds.lateThresholdSecs) return "late";
   return "on-time";
 }
 

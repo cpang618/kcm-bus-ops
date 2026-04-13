@@ -1,11 +1,11 @@
 import { useEffect, useMemo, useRef } from "react";
 import mapboxgl from "mapbox-gl";
-import type { Vehicle, HeadwayResult, HeadwayStatus } from "@bus-ops/shared";
+import type { Vehicle, HeadwayResult, HeadwayStatus, OtpStatus, ViewMode } from "@bus-ops/shared";
 import { classifyHeadway } from "@bus-ops/shared";
 import { useMap } from "./MapView.js";
 import { useRouteFilter } from "../../store/routeFilter.js";
 import { useThresholds } from "../../store/thresholds.js";
-import { STATUS_COLORS } from "./constants.js";
+import { STATUS_COLORS, OTP_STATUS_COLORS } from "./constants.js";
 
 const SOURCE_ID = "vehicles";
 const LAYER_ARROW_ID = "vehicles-arrow";
@@ -86,6 +86,8 @@ function registerStripedArrowImages(map: mapboxgl.Map): void {
 interface VehicleLayerProps {
   vehicles: Vehicle[];
   headways: HeadwayResult[];
+  viewMode: ViewMode;
+  otpByVehicle: Map<string, OtpStatus>;
 }
 
 const STATUS_LABELS: Record<HeadwayStatus, string> = {
@@ -95,29 +97,66 @@ const STATUS_LABELS: Record<HeadwayStatus, string> = {
   unknown: "Unknown",
 };
 
+const OTP_STATUS_LABELS: Record<OtpStatus, string> = {
+  early: "Early",
+  "on-time": "On Time",
+  late: "Late",
+  unknown: "Unknown",
+};
+
 function fmtSecs(secs: number | null | undefined): string {
   if (secs == null) return "\u2014";
   return `${Math.round(secs / 60)}m`;
 }
 
-function buildHoverHtml(vehicle: Vehicle, headway: HeadwayResult | undefined, noSchedule: boolean): string {
-  const status: HeadwayStatus = (headway?.status as HeadwayStatus) ?? "unknown";
+function fmtDelay(vehicle: Vehicle): { text: string; color: string } {
+  if (!vehicle.expectedArrivalTime || !vehicle.aimedArrivalTime) return { text: "\u2014", color: "#ddd" };
+  const exp = Date.parse(vehicle.expectedArrivalTime);
+  const aim = Date.parse(vehicle.aimedArrivalTime);
+  if (isNaN(exp) || isNaN(aim)) return { text: "\u2014", color: "#ddd" };
+  const diffMins = (exp - aim) / 60_000;
+  const abs = Math.abs(diffMins).toFixed(1);
+  if (diffMins > 0.5) return { text: `+${abs} min late`, color: "#E63946" };
+  if (diffMins < -0.5) return { text: `${abs} min early`, color: "#F4A261" };
+  return { text: "On time", color: "#2DC653" };
+}
+
+function buildHoverHtml(vehicle: Vehicle, headway: HeadwayResult | undefined, noSchedule: boolean, viewMode: ViewMode, otpStatus: OtpStatus): string {
   const dirLabel = vehicle.directionId === 0 ? "Outbound" : "Inbound";
-
-  let schedDiff = "\u2014";
-  if (vehicle.expectedArrivalTime && vehicle.aimedArrivalTime) {
-    const exp = Date.parse(vehicle.expectedArrivalTime);
-    const aim = Date.parse(vehicle.aimedArrivalTime);
-    if (!isNaN(exp) && !isNaN(aim)) {
-      const diffMins = (exp - aim) / 60_000;
-      const abs = Math.abs(diffMins).toFixed(1);
-      if (diffMins > 0.5) schedDiff = `+${abs} min late`;
-      else if (diffMins < -0.5) schedDiff = `${abs} min early`;
-      else schedDiff = "On time";
-    }
-  }
-
   const headsign = vehicle.headsign ? ` \u00b7 ${vehicle.headsign}` : "";
+
+  const isOtp = viewMode === "otp";
+  const badgeStatus = isOtp ? otpStatus : ((headway?.status as HeadwayStatus) ?? "unknown");
+  const badgeColor = isOtp ? OTP_STATUS_COLORS[otpStatus] : STATUS_COLORS[badgeStatus as HeadwayStatus];
+  const badgeLabel = isOtp ? OTP_STATUS_LABELS[otpStatus] : STATUS_LABELS[badgeStatus as HeadwayStatus];
+
+  const delay = fmtDelay(vehicle);
+
+  const metricsRows = isOtp
+    ? `
+        <tr>
+          <td style="color:#888; padding:2px 0;">Next stop</td>
+          <td style="text-align:right; color:#ddd;">${vehicle.nextStopName || "\u2014"}</td>
+        </tr>
+        <tr>
+          <td style="color:#888; padding:2px 0;">Schedule adherence</td>
+          <td style="text-align:right; color:${delay.color};">${delay.text}</td>
+        </tr>`
+    : `
+        <tr>
+          <td style="color:#888; padding:2px 0;">Next stop</td>
+          <td style="text-align:right; color:#ddd;">${vehicle.nextStopName || "\u2014"}</td>
+        </tr>
+        <tr>
+          <td style="color:#888; padding:2px 0;">Headway</td>
+          <td style="text-align:right; color:#ddd;">
+            ${fmtSecs(headway?.actualHeadwaySecs)} / ${fmtSecs(headway?.scheduledHeadwaySecs)} sched
+          </td>
+        </tr>
+        <tr>
+          <td style="color:#888; padding:2px 0;">Schedule</td>
+          <td style="text-align:right; color:#ddd;">${delay.text}</td>
+        </tr>`;
 
   return `
     <div style="
@@ -133,31 +172,18 @@ function buildHoverHtml(vehicle: Vehicle, headway: HeadwayResult | undefined, no
       <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
         <span style="font-size:16px; font-weight:700;">${vehicle.routeShortName}${headsign}</span>
         <span style="
-          background:${STATUS_COLORS[status]};
+          background:${badgeColor};
           color:#fff; font-size:11px; font-weight:600;
           padding:2px 8px; border-radius:12px; margin-left:8px;
-        ">${STATUS_LABELS[status]}</span>
+        ">${badgeLabel}</span>
       </div>
       <div style="color:#888; font-size:11px; margin-bottom:10px;">
         ${dirLabel} \u00b7 Bus #${vehicle.vehicleRef}
       </div>
       <table style="width:100%; border-collapse:collapse;">
-        <tr>
-          <td style="color:#888; padding:2px 0;">Next stop</td>
-          <td style="text-align:right; color:#ddd;">${vehicle.nextStopName || "\u2014"}</td>
-        </tr>
-        <tr>
-          <td style="color:#888; padding:2px 0;">Headway</td>
-          <td style="text-align:right; color:#ddd;">
-            ${fmtSecs(headway?.actualHeadwaySecs)} / ${fmtSecs(headway?.scheduledHeadwaySecs)} sched
-          </td>
-        </tr>
-        <tr>
-          <td style="color:#888; padding:2px 0;">Schedule</td>
-          <td style="text-align:right; color:#ddd;">${schedDiff}</td>
-        </tr>
+        ${metricsRows}
       </table>
-      ${noSchedule ? `
+      ${!isOtp && noSchedule ? `
       <div style="
         margin-top:8px; padding:5px 7px;
         background:rgba(244,162,97,0.12); border-radius:4px;
@@ -169,13 +195,19 @@ function buildHoverHtml(vehicle: Vehicle, headway: HeadwayResult | undefined, no
   `;
 }
 
-export function VehicleLayer({ vehicles, headways }: VehicleLayerProps) {
+export function VehicleLayer({ vehicles, headways, viewMode, otpByVehicle }: VehicleLayerProps) {
   const map = useMap();
   const { selectedRouteIds, selectedDirectionId } = useRouteFilter();
   const { thresholds } = useThresholds();
 
   const thresholdsRef = useRef(thresholds);
   useEffect(() => { thresholdsRef.current = thresholds; }, [thresholds]);
+
+  const viewModeRef = useRef(viewMode);
+  useEffect(() => { viewModeRef.current = viewMode; }, [viewMode]);
+
+  const otpByVehicleRef = useRef(otpByVehicle);
+  useEffect(() => { otpByVehicleRef.current = otpByVehicle; }, [otpByVehicle]);
 
   const hoverPopupRef = useRef<mapboxgl.Popup | null>(null);
 
@@ -193,17 +225,29 @@ export function VehicleLayer({ vehicles, headways }: VehicleLayerProps) {
   const featureCollection = useMemo((): GeoJSON.FeatureCollection => ({
     type: "FeatureCollection",
     features: vehicles.map((v) => {
-      const headway = headwayByVehicle.get(v.vehicleRef);
-      const status: HeadwayStatus = headway ? classifyHeadway(headway, thresholds) : "unknown";
-      // noSchedule: in pct mode, bus has a measured headway but no scheduled headway to compare
-      const noSchedule =
-        thresholds.mode === "pct" &&
-        (headway?.actualHeadwaySecs ?? null) !== null &&
-        (headway?.headwayRatioPct ?? null) === null;
-      const iconImage =
-        noSchedule && status !== "unknown"
-          ? `${STRIPED_IMAGE_PREFIX}${status}`
+      let status: string;
+      let color: string;
+      let iconImage: string;
+
+      if (viewMode === "otp") {
+        const otpStatus = otpByVehicle.get(v.vehicleRef) ?? "unknown";
+        status = otpStatus;
+        color = OTP_STATUS_COLORS[otpStatus];
+        iconImage = ARROW_IMAGE_ID;
+      } else {
+        const headway = headwayByVehicle.get(v.vehicleRef);
+        const hwStatus: HeadwayStatus = headway ? classifyHeadway(headway, thresholds) : "unknown";
+        const noSchedule =
+          thresholds.mode === "pct" &&
+          (headway?.actualHeadwaySecs ?? null) !== null &&
+          (headway?.headwayRatioPct ?? null) === null;
+        status = hwStatus;
+        color = STATUS_COLORS[hwStatus];
+        iconImage = noSchedule && hwStatus !== "unknown"
+          ? `${STRIPED_IMAGE_PREFIX}${hwStatus}`
           : ARROW_IMAGE_ID;
+      }
+
       return {
         type: "Feature",
         geometry: { type: "Point", coordinates: [v.lng, v.lat] },
@@ -216,16 +260,16 @@ export function VehicleLayer({ vehicles, headways }: VehicleLayerProps) {
           bearing: v.bearing,
           progressRate: v.progressRate,
           status,
-          color: STATUS_COLORS[status],
+          color,
           iconImage,
-          actualHeadwaySecs: headway?.actualHeadwaySecs ?? null,
-          scheduledHeadwaySecs: headway?.scheduledHeadwaySecs ?? null,
-          headwayRatioPct: headway?.headwayRatioPct ?? null,
-          leadVehicleRef: headway?.leadVehicleRef ?? null,
+          actualHeadwaySecs: headwayByVehicle.get(v.vehicleRef)?.actualHeadwaySecs ?? null,
+          scheduledHeadwaySecs: headwayByVehicle.get(v.vehicleRef)?.scheduledHeadwaySecs ?? null,
+          headwayRatioPct: headwayByVehicle.get(v.vehicleRef)?.headwayRatioPct ?? null,
+          leadVehicleRef: headwayByVehicle.get(v.vehicleRef)?.leadVehicleRef ?? null,
         },
       };
     }),
-  }), [vehicles, headwayByVehicle, thresholds]);
+  }), [vehicles, headwayByVehicle, thresholds, viewMode, otpByVehicle]);
 
   useEffect(() => {
     if (!map) return;
@@ -334,6 +378,7 @@ export function VehicleLayer({ vehicles, headways }: VehicleLayerProps) {
         thresholdsRef.current.mode === "pct" &&
         (headway?.actualHeadwaySecs ?? null) !== null &&
         (headway?.headwayRatioPct ?? null) === null;
+      const otpStatus = otpByVehicleRef.current.get(vehicleRef) ?? "unknown";
 
       hoverPopupRef.current?.remove();
       hoverPopupRef.current = new mapboxgl.Popup({
@@ -343,7 +388,7 @@ export function VehicleLayer({ vehicles, headways }: VehicleLayerProps) {
         maxWidth: "280px",
       })
         .setLngLat(e.lngLat)
-        .setHTML(buildHoverHtml(vehicle, enrichedHeadway, noSchedule))
+        .setHTML(buildHoverHtml(vehicle, enrichedHeadway, noSchedule, viewModeRef.current, otpStatus))
         .addTo(m);
     }
 
